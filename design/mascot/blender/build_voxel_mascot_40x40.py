@@ -24,7 +24,12 @@ from mathutils import Vector
 try:
     BASE_DIR = Path(__file__).resolve().parent
 except NameError:
-    BASE_DIR = Path(bpy.path.abspath("//"))
+    script_text = next((item for item in bpy.data.texts if item.filepath), None)
+    if script_text is None:
+        raise RuntimeError(
+            "Open this .py file from disk in Blender's Text Editor before running it."
+        )
+    BASE_DIR = Path(bpy.path.abspath(script_text.filepath)).resolve().parent
 
 IMAGE_PATH = BASE_DIR / "original-sprite-40x40.png"
 OUTPUT_BLEND = BASE_DIR / "ihza_mascot_voxel_40x40.blend"
@@ -277,10 +282,13 @@ def main():
     look_at(fill, (0, 7, 0))
 
     scene = bpy.context.scene
-    if hasattr(bpy.types, "EEVEE_NEXT"):
+    engine_items = scene.render.bl_rna.properties["engine"].enum_items.keys()
+    if "BLENDER_EEVEE_NEXT" in engine_items:
         scene.render.engine = "BLENDER_EEVEE_NEXT"
-    else:
+    elif "BLENDER_EEVEE" in engine_items:
         scene.render.engine = "BLENDER_EEVEE"
+    else:
+        scene.render.engine = "BLENDER_WORKBENCH"
     scene.render.resolution_x = 1000
     scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
